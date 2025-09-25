@@ -3,39 +3,28 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Fullscreen MP4 Player</title>
+<title>Fullscreen Large MP4 Player</title>
 <style>
   html, body {
     margin: 0;
     height: 100%;
     background: #000;
-    color: #fff;
     font-family: sans-serif;
   }
-  video {
+  #video {
     width: 100%;
     height: 100%;
     object-fit: contain;
     background: #000;
   }
-  #controls {
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    height: 60px;
+  #fileContainer {
+    position: absolute;
+    top: 20px;
+    left: 20px;
     background: rgba(0,0,0,0.5);
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 0 10px;
-    box-sizing: border-box;
-  }
-  #seek {
-    flex: 1;
-  }
-  input[type="file"] {
-    display: none;
+    padding: 10px 12px;
+    border-radius: 6px;
+    color: #fff;
   }
   button {
     background: transparent;
@@ -50,19 +39,18 @@
 <body>
   <video id="video" controls></video>
 
-  <div id="controls">
+  <div id="fileContainer">
     <label>
       <button id="openBtn">📁 Open File</button>
       <input type="file" id="fileInput" accept="video/mp4">
     </label>
-    <button id="fsBtn">⤢ Fullscreen</button>
+    <span style="margin-left:10px;font-size:14px;color:#ccc">Max 5GB</span>
   </div>
 
 <script>
 const video = document.getElementById('video');
 const fileInput = document.getElementById('fileInput');
 const openBtn = document.getElementById('openBtn');
-const fsBtn = document.getElementById('fsBtn');
 
 openBtn.addEventListener('click', () => fileInput.click());
 
@@ -70,34 +58,43 @@ fileInput.addEventListener('change', e => {
   const file = e.target.files[0];
   if (!file) return;
 
-  // Check file size (max 5GB)
-  const maxSize = 5 * 1024 * 1024 * 1024; // 5GB in bytes
+  // Limit 5GB
+  const maxSize = 5 * 1024 * 1024 * 1024; // 5GB
   if (file.size > maxSize) {
     alert('File too large! Maximum size is 5GB.');
     return;
   }
 
+  // Create a streaming-friendly object URL
   const url = URL.createObjectURL(file);
   video.src = url;
-  video.play();
+
+  // Start playing automatically
+  video.play().catch(() => {
+    console.log("Autoplay blocked, waiting for user interaction.");
+  });
 });
 
-// Fullscreen toggle
-fsBtn.addEventListener('click', async () => {
-  if (!document.fullscreenElement) {
-    await video.requestFullscreen().catch(console.log);
-  } else {
-    await document.exitFullscreen().catch(console.log);
-  }
-});
-
-// Double-click video to toggle fullscreen
+// Fullscreen toggle via double-click
 video.addEventListener('dblclick', async () => {
   if (!document.fullscreenElement) {
     await video.requestFullscreen().catch(console.log);
   } else {
     await document.exitFullscreen().catch(console.log);
   }
+});
+
+// Optional: fullscreen button via keyboard
+window.addEventListener('keydown', e => {
+  if (e.key === 'f') {
+    if (!document.fullscreenElement) video.requestFullscreen().catch(console.log);
+    else document.exitFullscreen().catch(console.log);
+  }
+});
+
+// Cleanup object URL on unload
+window.addEventListener('beforeunload', () => {
+  if (video.src.startsWith('blob:')) URL.revokeObjectURL(video.src);
 });
 </script>
 </body>
